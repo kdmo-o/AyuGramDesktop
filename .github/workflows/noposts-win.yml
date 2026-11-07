@@ -29,10 +29,12 @@ jobs:
         shell: cmd
 
     steps:
+      # C: has only ~24 GB free and the Release app build filled it
+      # ("No space left on device"); D: has ~147 GB, so build there.
       - name: Prepare directories.
         run: |
-          mkdir %userprofile%\TBuild\Libraries
-          mklink /d %GITHUB_WORKSPACE%\TBuild %userprofile%\TBuild
+          mkdir D:\TBuild\Libraries
+          mklink /d %GITHUB_WORKSPACE%\TBuild D:\TBuild
           echo TBUILD=%GITHUB_WORKSPACE%\TBuild>>%GITHUB_ENV%
           echo LibrariesPath=%GITHUB_WORKSPACE%\TBuild\Libraries\win64>>%GITHUB_ENV%
 

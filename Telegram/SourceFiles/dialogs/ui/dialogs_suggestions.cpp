@@ -2311,7 +2311,7 @@ std::vector<Suggestions::Key> Suggestions::TabKeysFor(
 		{ Tab::Chats },
 		{ Tab::Channels },
 		{ Tab::Apps },
-		{ Tab::Posts },
+		// noposts: { Tab::Posts } removed, public posts search is disabled.
 		{ Tab::Media, MediaType::Photo },
 		{ Tab::Media, MediaType::Video },
 		{ Tab::Downloads },

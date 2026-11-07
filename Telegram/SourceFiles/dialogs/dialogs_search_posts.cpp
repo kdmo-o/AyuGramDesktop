@@ -170,6 +170,8 @@ void PostsSearch::applyQuery() {
 }
 
 void PostsSearch::requestSearch(const QString &query) {
+	// noposts: never send channels.searchPosts.
+	return;
 	auto &entry = _entries[query];
 	if (entry.searchId || entry.loaded) {
 		return;
@@ -313,6 +315,8 @@ void PostsSearch::recheck() {
 }
 
 void PostsSearch::requestState(const QString &query, bool force) {
+	// noposts: never send channels.checkSearchPostsFlood.
+	return;
 	auto &entry = _entries[query];
 	if (force) {
 		_api.request(base::take(entry.checkId)).cancel();

@@ -1,0 +1,137 @@
+# Personal Windows x64 Release build of the 'noposts' branch
+# (AyuGram Desktop with public posts search removed).
+# Adapted from telegramdesktop/tdesktop .github/workflows/win.yml.
+# Needs repository secrets TDESKTOP_API_ID and TDESKTOP_API_HASH.
+
+name: Windows noposts.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - noposts
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+
+jobs:
+
+  windows:
+    name: Windows x64 Release
+    runs-on: windows-latest
+    timeout-minutes: 360
+
+    env:
+      PREPARE_PATH: "Telegram/build/prepare/prepare.py"
+
+    defaults:
+      run:
+        shell: cmd
+
+    steps:
+      - name: Prepare directories.
+        run: |
+          mkdir %userprofile%\TBuild\Libraries
+          mklink /d %GITHUB_WORKSPACE%\TBuild %userprofile%\TBuild
+          echo TBUILD=%GITHUB_WORKSPACE%\TBuild>>%GITHUB_ENV%
+          echo LibrariesPath=%GITHUB_WORKSPACE%\TBuild\Libraries\win64>>%GITHUB_ENV%
+
+      - name: Get repository name.
+        shell: bash
+        run: echo "REPO_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+
+      - name: Clone.
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          path: ${{ env.TBUILD }}\${{ env.REPO_NAME }}
+
+      - name: First set up.
+        shell: bash
+        run: |
+          DOCPATH=$TBUILD/$REPO_NAME/docs/building-win.md
+          SDK="$(grep "SDK version" $DOCPATH | sed -r 's/.*\*\*(.*)\*\* SDK version.*/\1/')"
+          echo "SDK=$SDK" >> $GITHUB_ENV
+
+          echo "$(sha256sum $TBUILD/$REPO_NAME/$PREPARE_PATH | awk '{ print $1 }')" >> CACHE_KEY.txt
+          echo "$SDK" >> CACHE_KEY.txt
+          echo "CACHE_KEY=$(sha256sum CACHE_KEY.txt | awk '{ print $1 }')" >> $GITHUB_ENV
+
+          echo "Configurate git for cherry-picks."
+          git config --global user.email "you@example.com"
+          git config --global user.name "Sample"
+
+      - uses: Eden-CI/msvc-dev-cmd@master
+        name: Native Tools Command Prompt.
+        with:
+          arch: x64
+          sdk: ${{ env.SDK }}
+          toolset: '14.44'
+
+      - name: NuGet sources.
+        run: |
+          nuget sources Disable -Name "Microsoft Visual Studio Offline Packages"
+          nuget sources Add -Source https://api.nuget.org/v3/index.json & exit 0
+
+      - name: Restore libraries cache.
+        id: cache-restore
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            ${{ env.TBUILD }}\ThirdParty
+            ${{ env.TBUILD }}\Libraries
+          key: noposts-win64-release-libs-${{ env.CACHE_KEY }}
+          restore-keys: noposts-win64-release-libs-
+
+      # Without skip-release both Debug and Release libraries are built,
+      # the Release app build needs the Release ones.
+      - name: Libraries.
+        id: libs
+        run: |
+          %TBUILD%\%REPO_NAME%\Telegram\build\prepare\win.bat silent
+
+      - name: Free up some disk space.
+        shell: bash
+        run: find $LibrariesPath '(' '(' ! '(' -name '*.lib' -o -name '*.a' -o -name '*.exe' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -name '*.pc' -o -path '*/include/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' -o -path '*/nv-codec-headers/*' ')' -type f ')' -o -empty ')' -delete
+
+      # Saved right after the libraries so a failed app build can be
+      # rerun without rebuilding them.
+      - name: Save libraries cache.
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            ${{ env.TBUILD }}\ThirdParty
+            ${{ env.TBUILD }}\Libraries
+          key: noposts-win64-release-libs-${{ env.CACHE_KEY }}
+
+      - name: AyuGram Desktop build.
+        env:
+          API_ID: ${{ secrets.TDESKTOP_API_ID }}
+          API_HASH: ${{ secrets.TDESKTOP_API_HASH }}
+        run: |
+          cd %TBUILD%\%REPO_NAME%\Telegram
+
+          call configure.bat ^
+          x64 ^
+          -D TDESKTOP_API_ID=%API_ID% ^
+          -D TDESKTOP_API_HASH=%API_HASH% ^
+          -D CMAKE_CONFIGURATION_TYPES=Release ^
+          -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON ^
+          -D DESKTOP_APP_DISABLE_CRASH_REPORTS=ON
+          if errorlevel 1 exit /b 1
+
+          cmake --build ..\out --config Release --parallel
+
+      - name: Move artifact.
+        run: |
+          set OUT=%TBUILD%\%REPO_NAME%\out\Release
+          mkdir artifact
+          move %OUT%\AyuGram.exe artifact/
+
+      - uses: actions/upload-artifact@v7
+        name: Upload artifact.
+        with:
+          name: AyuGram-noposts-win64
+          path: artifact\
+          retention-days: 7

@@ -5351,14 +5351,24 @@ void InnerWidget::updateSearchIn() {
 	const auto fromName = _searchFromShown
 		? _searchFromShown->shortName()
 		: QString();
-	_searchIn->apply({
+	auto tabs = std::vector<ChatSearchIn::PossibleTab>{
 		{ ChatSearchTab::ThisTopic, topicIcon },
 		{ ChatSearchTab::ThisPeer, peerIcon },
 		{ ChatSearchTab::ThisCommunity, communityIcon },
 		{ ChatSearchTab::Archive, archiveIcon },
 		{ ChatSearchTab::MyMessages, myIcon },
-		{ ChatSearchTab::PublicPosts, publicIcon },
-	}, _searchState.tab, peerTabType, fromImage, fromName);
+	};
+	// noposts: offer the public posts tab only if somehow already active,
+	// because ChatSearchIn::apply asserts the active tab is in the list.
+	if (_searchState.tab == ChatSearchTab::PublicPosts) {
+		tabs.push_back({ ChatSearchTab::PublicPosts, publicIcon });
+	}
+	_searchIn->apply(
+		std::move(tabs),
+		_searchState.tab,
+		peerTabType,
+		fromImage,
+		fromName);
 }
 
 void InnerWidget::repaintSearchResult(int index) {
@@ -5378,9 +5388,8 @@ void InnerWidget::repaintPreviewResult(int index) {
 }
 
 bool InnerWidget::computeSearchWithPostsPreview() const {
-	return 	(_searchHashOrCashtag != HashOrCashtag::None)
-		&& (_searchState.tab == ChatSearchTab::MyMessages)
-		&& !_searchState.inChat;
+	// noposts: no public posts preview for hashtag / cashtag searches.
+	return false;
 }
 
 void InnerWidget::clearFilter() {

@@ -3637,6 +3637,8 @@ void Widget::searchMore() {
 }
 
 void Widget::requestPublicPosts(bool fromStart) {
+	// noposts: never send channels.searchPosts.
+	return;
 	if (!_postsProcess.lastId || !_postsProcess.lastPeer) {
 		fromStart = true;
 	}
@@ -3732,9 +3734,8 @@ auto Widget::currentSearchProcess() -> not_null<SearchProcessState*> {
 }
 
 bool Widget::computeSearchWithPostsPreview() const {
-	return 	(_searchHashOrCashtag != HashOrCashtag::None)
-		&& (_searchState.tab == ChatSearchTab::MyMessages)
-		&& !_searchState.inChat;
+	// noposts: no public posts preview for hashtag / cashtag searches.
+	return false;
 }
 
 void Widget::searchReceived(
@@ -4248,8 +4249,8 @@ bool Widget::applySearchState(SearchState state) {
 	if (!state.inChat && !forum && !_openedForum) {
 		state.fromPeer = nullptr;
 	}
-	if (state.tab == ChatSearchTab::PublicPosts
-		&& IsHashOrCashtagSearchQuery(state.query) == HashOrCashtag::None) {
+	// noposts: public posts search is disabled, never enter its tab.
+	if (state.tab == ChatSearchTab::PublicPosts) {
 		state.tab = (_openedForum && !state.inChat)
 			? ChatSearchTab::ThisPeer
 			: _openedFolder
@@ -4331,8 +4332,7 @@ bool Widget::applySearchState(SearchState state) {
 			&& (!_openedFolder || state.inChat))
 		|| (state.tab == ChatSearchTab::ThisCommunity
 			&& ((!state.community && !_openedCommunity) || state.inChat))
-		|| (state.tab == ChatSearchTab::PublicPosts
-			&& _searchHashOrCashtag == HashOrCashtag::None)) {
+		|| (state.tab == ChatSearchTab::PublicPosts)) {
 		state.tab = state.inChat.topic()
 			? ChatSearchTab::ThisTopic
 			: (state.inChat.owningHistory() || state.inChat.sublist())

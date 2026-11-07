@@ -3406,7 +3406,9 @@ bool Widget::search(bool inCache, SearchRequestDelay delay) {
 }
 
 bool Widget::peerSearchRequired() const {
-	return _searchState.filterChatsList() && !_openedForum;
+	// noposts: never query the server for global peer search results
+	// (contacts.search / sponsored peers), so that section never appears.
+	return false;
 }
 
 bool Widget::searchForTopicsRequired(const QString &query) const {

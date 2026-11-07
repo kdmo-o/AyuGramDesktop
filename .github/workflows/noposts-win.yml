@@ -152,6 +152,17 @@ jobs:
             ${{ env.TBUILD }}\Libraries
           key: noposts-win64-release-libs-${{ env.CACHE_KEY }}
 
+      # The Release app build ran out of space on C: (also failing the
+      # compiler with out of heap space), drop unused preinstalled SDKs.
+      - name: Free up runner disk space.
+        shell: pwsh
+        run: |
+          Get-PSDrive -PSProvider FileSystem | Format-Table Name, @{n='FreeGB';e={[math]::Round($_.Free/1GB,1)}}
+          foreach ($dir in @('C:\Android', 'C:\hostedtoolcache\windows\CodeQL', 'C:\hostedtoolcache\windows\go', 'C:\hostedtoolcache\windows\Ruby', 'C:\hostedtoolcache\windows\PyPy', 'C:\Program Files\Microsoft SQL Server', 'C:\SeleniumWebDrivers')) {
+            if (Test-Path $dir) { cmd /c rmdir /s /q "$dir" }
+          }
+          Get-PSDrive -PSProvider FileSystem | Format-Table Name, @{n='FreeGB';e={[math]::Round($_.Free/1GB,1)}}
+
       - name: AyuGram Desktop build.
         env:
           API_ID: ${{ secrets.TDESKTOP_API_ID }}
@@ -169,6 +180,9 @@ jobs:
           if errorlevel 1 exit /b 1
 
           cmake --build ..\out --config Release --parallel
+          set BUILD_RESULT=%errorlevel%
+          powershell -Command "Get-PSDrive -PSProvider FileSystem | Format-Table Name, @{n='FreeGB';e={[math]::Round($_.Free/1GB,1)}}"
+          exit /b %BUILD_RESULT%
 
       - name: Move artifact.
         run: |

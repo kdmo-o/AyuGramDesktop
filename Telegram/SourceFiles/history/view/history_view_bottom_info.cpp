@@ -178,7 +178,7 @@ TextState BottomInfo::textState(
 	}
 	const auto textWidth = _authorEditedDate.maxWidth();
 	auto withTicksWidth = textWidth;
-	if (!AyuFeatures::MessageShot::isTakingShot() && (_data.flags & (Data::Flag::OutLayout | Data::Flag::Sending))) {
+	if (!AyuFeatures::MessageShot::isTakingShot() && (_data.flags & Data::Flag::Sending)) {
 		withTicksWidth += st::historySendStateSpace;
 	}
 	if (!_views.isEmpty()) {
@@ -281,7 +281,10 @@ void BottomInfo::paint(
 
 	auto right = position.x() + width();
 	const auto firstLineBottom = position.y() + st::msgDateFont->height;
-	if (!AyuFeatures::MessageShot::isTakingShot() && (_data.flags & Data::Flag::OutLayout)) {
+	// noposts: only the sending clock is drawn; sent / read checks never are.
+	if (!AyuFeatures::MessageShot::isTakingShot()
+		&& (_data.flags & Data::Flag::OutLayout)
+		&& (_data.flags & Data::Flag::Sending)) {
 		const auto &icon = (_data.flags & Data::Flag::Sending)
 			? (inverted
 				? st->historySendingInvertedIcon()
@@ -703,7 +706,7 @@ QSize BottomInfo::countOptimalSize() {
 		return { st::historyShortcutStateSpace, st::msgDateFont->height };
 	}
 	auto width = 0;
-	if (!AyuFeatures::MessageShot::isTakingShot() && (_data.flags & (Data::Flag::OutLayout | Data::Flag::Sending))) {
+	if (!AyuFeatures::MessageShot::isTakingShot() && (_data.flags & Data::Flag::Sending)) {
 		width += st::historySendStateSpace;
 	}
 	width += _authorEditedDate.maxWidth();

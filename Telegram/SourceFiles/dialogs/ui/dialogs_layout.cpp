@@ -851,14 +851,10 @@ void PaintRow(
 			}
 		} else if (item && !item->isEmpty() && item->needCheck()) {
 			if (!item->isSending() && !item->hasFailed()) {
-				if (item->unread(thread)) {
-					return &ThreeStateIcon(
-						st::dialogsSentIcon,
-						context.active,
-						context.selected);
-				}
+				// noposts: never show the double "read" check in the chat
+				// list; sent messages always show the single check.
 				return &ThreeStateIcon(
-					st::dialogsReceivedIcon,
+					st::dialogsSentIcon,
 					context.active,
 					context.selected);
 			}

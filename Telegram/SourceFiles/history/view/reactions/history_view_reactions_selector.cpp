@@ -1437,6 +1437,10 @@ AttachSelectorResult AttachSelectorToMenu(
 		Fn<void(ChosenReaction)> chosen,
 		TextWithEntities about,
 		IconFactory iconFactory) {
+	// noposts: never attach the emoji reaction picker to context menus.
+	if (true) {
+		return AttachSelectorResult::Skipped;
+	}
 	const auto &settings = AyuSettings::getInstance();
 	if (!AyuUi::needToShowItem(settings.showReactionsPanelInContextMenu())) {
 		return AttachSelectorResult::Skipped;

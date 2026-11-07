@@ -2097,6 +2097,10 @@ void TopBarWidget::updateOnlineDisplay() {
 			text = channel->isMegagroup() ? tr::lng_group_status(tr::now) : tr::lng_channel_status(tr::now);
 		}
 	}
+	// noposts: hide subscriber / member counts in the chat header.
+	if (!peer->isUser() && !peer->monoforum() && !peer->isMonoforum()) {
+		text = QString();
+	}
 	if (_titlePeerText.toString() != text) {
 		_titlePeerText.setText(st::dialogsTextStyle, text);
 		_titlePeerTextOnline = titlePeerTextOnline;

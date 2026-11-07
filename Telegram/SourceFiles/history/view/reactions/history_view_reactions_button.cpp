@@ -415,6 +415,10 @@ void Manager::updateButton(ButtonParameters parameters) {
 	}
 	_buttonContext = parameters.context;
 	parameters.reactionsCount = _strip.count();
+	// noposts: never show the hover emoji reaction picker button.
+	if (true) {
+		return;
+	}
 	if (!_buttonContext || !parameters.reactionsCount) {
 		return;
 	} else if (_button) {

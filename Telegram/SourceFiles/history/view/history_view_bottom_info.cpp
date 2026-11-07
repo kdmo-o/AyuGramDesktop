@@ -813,9 +813,7 @@ BottomInfo::Data BottomInfoDataFromMessage(not_null<Message*> message) {
 		result.flags |= Flag::Updated;
 	}
 	if (const auto views = item->Get<HistoryMessageViews>()) {
-		if (views->views.count >= 0) {
-			result.views = views->views.count;
-		}
+		// noposts: never show message view counts.
 		if (views->replies.count >= 0 && !views->commentsMegagroupId) {
 			result.replies = views->replies.count;
 		}
